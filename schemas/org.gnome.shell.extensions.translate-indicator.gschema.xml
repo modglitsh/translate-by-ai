@@ -1,0 +1,59 @@
+<schemalist gettext-domain="gnome-shell-extensions">
+  <schema id="org.gnome.shell.extensions.translate-indicator"
+      path="/org/gnome/shell/extensions/translate-indicator/">
+
+    <!-- LLM Settings -->
+    <key name="llm-api-key" type="s">
+      <default>''</default>
+      <summary>LLM API Key</summary>
+      <description>API key for the LLM provider</description>
+    </key>
+
+    <key name="llm-base-url" type="s">
+      <default>'https://generativelanguage.googleapis.com/v1beta/models'</default>
+      <summary>LLM Base URL</summary>
+      <description>Base URL for the LLM API endpoint</description>
+    </key>
+
+    <key name="llm-model" type="s">
+      <default>'gemini-2.0-flash'</default>
+      <summary>LLM Model Name</summary>
+      <description>The model name to use for translation</description>
+    </key>
+
+    <key name="llm-system-prompt" type="s">
+      <default>'You are a professional translator. Translate the given text accurately and naturally. Provide only the translation without any extra explanation unless asked.'</default>
+      <summary>System Prompt (Base Role)</summary>
+      <description>The system/base role prompt sent to the LLM</description>
+    </key>
+
+    <key name="llm-user-prompt" type="s">
+      <default>'Translate the following text to {target_lang}:\n\n{text}'</default>
+      <summary>User Prompt Template</summary>
+      <description>The user prompt template. Use {text} for the input text and {target_lang} for target language.</description>
+    </key>
+
+    <key name="llm-target-lang" type="s">
+      <default>'Arabic'</default>
+      <summary>Target Language</summary>
+      <description>Default target language for translation</description>
+    </key>
+
+    <!-- Shortcuts -->
+    <key name="translate-with-notification" type="as">
+      <default><![CDATA[['<Super><Alt>T']]]></default>
+      <summary>Translate with Notification</summary>
+      <description>
+        Key to translate current selection and show the result in a Notification
+      </description>
+    </key>
+    <key name="translate-from-selection" type="as">
+      <default><![CDATA[['<Super>T']]]></default>
+      <summary>Toggle the menu</summary>
+      <description>
+        Key to toggle the translate menu with selected text
+      </description>
+    </key>
+
+  </schema>
+</schemalist>

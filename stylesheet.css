@@ -1,0 +1,32 @@
+.entry {
+    width: 550px;
+    min-width: 550px;
+    max-width: 550px;
+    min-height: 50px;
+    border-radius: 15px;
+}
+
+.translate-main-container {
+    max-height: 300px !important;
+}
+
+.entry-container {
+    max-height: 250px;
+}
+
+/* Output scroll area - separate from input */
+.translate-output-scroll {
+    max-height: 250px;
+    padding: 0 12px;
+}
+
+.translate-output {
+    width: 550px;
+    min-width: 550px;
+    max-width: 550px;
+    padding: 10px;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: inherit;
+}
