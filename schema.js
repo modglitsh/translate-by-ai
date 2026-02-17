@@ -10,5 +10,6 @@ export const Fields = {
 	LLM_MODEL: 'llm-model',
 	LLM_SYSTEM_PROMPT: 'llm-system-prompt',
 	LLM_USER_PROMPT: 'llm-user-prompt',
+	LLM_SOURCE_LANG: 'llm-source-lang',
 	LLM_TARGET_LANG: 'llm-target-lang',
 };

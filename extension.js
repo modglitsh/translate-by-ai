@@ -74,6 +74,7 @@ const TranslateIndicator = GObject.registerClass({
 		this._llmModel = '';
 		this._llmSystemPrompt = '';
 		this._llmUserPrompt = '';
+		this._llmSourceLang = '';
 		this._llmTargetLang = '';
 
 		let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box translate-indicator-hbox' });
@@ -230,6 +231,7 @@ const TranslateIndicator = GObject.registerClass({
 		const systemPrompt = this._llmSystemPrompt;
 		const userPrompt = this._llmUserPrompt
 			.replace('{text}', text)
+			.replace('{source_lang}', this._llmSourceLang)
 			.replace('{target_lang}', this._llmTargetLang);
 
 		// Detect API type from base URL
@@ -378,6 +380,7 @@ const TranslateIndicator = GObject.registerClass({
 		this._llmModel = settings.get_string(Fields.LLM_MODEL);
 		this._llmSystemPrompt = settings.get_string(Fields.LLM_SYSTEM_PROMPT);
 		this._llmUserPrompt = settings.get_string(Fields.LLM_USER_PROMPT);
+		this._llmSourceLang = settings.get_string(Fields.LLM_SOURCE_LANG);
 		this._llmTargetLang = settings.get_string(Fields.LLM_TARGET_LANG);
 	}
 

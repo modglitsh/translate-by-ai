@@ -11,22 +11,23 @@ export default class TranslateIndicatorPreferences extends ExtensionPreferences 
 		window._settings = this.getSettings(SCHEMA_NAME);
 		const settingsUI = new Settings(window._settings);
 
-		// --- Page 1: LLM Settings ---
-		const llmPage = new Adw.PreferencesPage({
-			title: _('LLM'),
+		// --- Page 1: General (Languages & Shortcuts) ---
+		const generalPage = new Adw.PreferencesPage({
+			title: _('General'),
 			icon_name: 'preferences-system-symbolic',
 		});
-		llmPage.add(settingsUI.llmGroup);
-		llmPage.add(settingsUI.promptGroup);
-		window.add(llmPage);
+		generalPage.add(settingsUI.languageGroup);   // New group for languages
+		generalPage.add(settingsUI.shortcuts);       // Existing shortcuts group
+		window.add(generalPage);
 
-		// --- Page 2: Shortcuts ---
-		const shortcutsPage = new Adw.PreferencesPage({
-			title: _('Shortcuts'),
-			icon_name: 'preferences-desktop-keyboard-shortcuts-symbolic',
+		// --- Page 2: LLM Connection ---
+		const llmConnectionPage = new Adw.PreferencesPage({
+			title: _('LLM Connection'),
+			icon_name: 'network-server-symbolic',
 		});
-		shortcutsPage.add(settingsUI.shortcuts);
-		window.add(shortcutsPage);
+		llmConnectionPage.add(settingsUI.llmGroup);  // Connection settings only
+		llmConnectionPage.add(settingsUI.promptGroup); // Prompts
+		window.add(llmConnectionPage);
 	}
 }
 
@@ -37,7 +38,6 @@ class Settings {
 		// ===== LLM Connection Group =====
 		this.llmGroup = new Adw.PreferencesGroup({
 			title: _('LLM Connection'),
-			description: _('Configure your AI model provider (OpenAI-compatible, Gemini, etc.)'),
 		});
 
 		// API Key
@@ -61,17 +61,29 @@ class Settings {
 		this.modelEntry.text = this.schema.get_string(Fields.LLM_MODEL);
 		this.llmGroup.add(this.modelEntry);
 
+		// ===== Language Group (Source & Target) =====
+		this.languageGroup = new Adw.PreferencesGroup({
+			title: _('Language Settings'),
+		});
+
+		// Source Language
+		this.sourceLangEntry = new Adw.EntryRow({
+			title: _('Source Language'),
+		});
+		this.sourceLangEntry.text = this.schema.get_string(Fields.LLM_SOURCE_LANG);
+		this.languageGroup.add(this.sourceLangEntry);
+
 		// Target Language
 		this.targetLangEntry = new Adw.EntryRow({
 			title: _('Target Language'),
 		});
 		this.targetLangEntry.text = this.schema.get_string(Fields.LLM_TARGET_LANG);
-		this.llmGroup.add(this.targetLangEntry);
+		this.languageGroup.add(this.targetLangEntry);
+
 
 		// ===== Prompt Group =====
 		this.promptGroup = new Adw.PreferencesGroup({
 			title: _('Prompts'),
-			description: _('Customize how the AI responds. Use {text} for input and {target_lang} for language.'),
 		});
 
 		// System Prompt (Base Role) - Using a text view for multiline
@@ -104,12 +116,11 @@ class Settings {
 			margin_bottom: 8,
 		});
 		const systemPromptLabel = new Gtk.Label({
-			label: _('System Prompt (Base Role)'),
+			label: _('System Prompt'),
 			xalign: 0,
 			css_classes: ['title-4'],
 		});
 		const systemPromptSub = new Gtk.Label({
-			label: _('Defines the AI personality and behavior'),
 			xalign: 0,
 			css_classes: ['dim-label'],
 		});
@@ -133,7 +144,6 @@ class Settings {
 			css_classes: ['title-4'],
 		});
 		const userPromptSub = new Gtk.Label({
-			label: _('Use {text} for input text and {target_lang} for target language'),
 			xalign: 0,
 			css_classes: ['dim-label'],
 		});
@@ -166,6 +176,8 @@ class Settings {
 		this.schema.bind(Fields.LLM_API_KEY, this.apiKeyEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
 		this.schema.bind(Fields.LLM_BASE_URL, this.baseUrlEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
 		this.schema.bind(Fields.LLM_MODEL, this.modelEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
+		this.schema.bind(Fields.LLM_SOURCE_LANG, this.sourceLangEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
+
 		this.schema.bind(Fields.LLM_TARGET_LANG, this.targetLangEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
 
 		// For TextViews, we need manual save on buffer change

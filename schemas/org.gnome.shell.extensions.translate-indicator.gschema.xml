@@ -28,9 +28,15 @@
     </key>
 
     <key name="llm-user-prompt" type="s">
-      <default>'Translate the following text to {target_lang}:\n\n{text}'</default>
+      <default>'Translate the following text. If it is in {source_lang}, translate to {target_lang}. If it is in {target_lang}, translate to {source_lang}. Text:\n\n{text}'</default>
       <summary>User Prompt Template</summary>
-      <description>The user prompt template. Use {text} for the input text and {target_lang} for target language.</description>
+      <description>The user prompt template. Use {text} for input, {source_lang} for source language, and {target_lang} for target language.</description>
+    </key>
+
+    <key name="llm-source-lang" type="s">
+      <default>'English'</default>
+      <summary>Source Language</summary>
+      <description>Default source language for translation</description>
     </key>
 
     <key name="llm-target-lang" type="s">
