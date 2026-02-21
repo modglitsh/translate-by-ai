@@ -384,11 +384,25 @@ const TranslateIndicator = GObject.registerClass({
 		}
 
 		try {
+			// Determine the path to edge-playback
+			let edgePlaybackPath = GLib.get_home_dir() + '/.local/bin/edge-playback';
+
+			// If not in standard pipx/local path, check system path
+			if (!GLib.file_test(edgePlaybackPath, GLib.FileTest.EXISTS)) {
+				let systemPath = GLib.find_program_in_path('edge-playback');
+				if (systemPath) {
+					edgePlaybackPath = systemPath;
+				} else {
+					// edge-playback is completely missing
+					this._showNotification(_('Text-to-Speech Error: edge-tts is not installed. Please install it using pip or pipx.'));
+					console.error('edge-playback not found in ~/.local/bin/ or system PATH');
+					return;
+				}
+			}
+
 			// Cancel any currently playing audio
 			GLib.spawn_command_line_async('pkill -f edge-tts');
 			GLib.spawn_command_line_async('pkill -f mpv');
-			// Using edge-playback (part of edge-tts) installed at ~/.local/bin/edge-playback
-			// First, cancel any currently playing audio
 			GLib.spawn_command_line_async('pkill -f edge-playback');
 
 			// Sanitize the text to prevent shell injection, replace ' with '\''
@@ -398,11 +412,11 @@ const TranslateIndicator = GObject.registerClass({
 			let voice = this.extension.settings.get_string(Fields.TTS_VOICE) || 'en-US-AriaNeural';
 
 			// Try to spawn the edge-playback command
-			GLib.spawn_command_line_async(`/home/mohamed/.local/bin/edge-playback --voice ${voice} --text '${safeText}'`);
+			GLib.spawn_command_line_async(`${edgePlaybackPath} --voice ${voice} --text '${safeText}'`);
 
 		} catch (error) {
 			console.error('Failed to trigger text-to-speech:', error);
-			this._showNotification(_('Failed to play audio. Make sure edge-tts is installed.'));
+			this._showNotification(_('Failed to play audio. Error: ' + error.message));
 		}
 	}
 
