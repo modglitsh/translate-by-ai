@@ -12,4 +12,8 @@ export const Fields = {
 	LLM_USER_PROMPT: 'llm-user-prompt',
 	LLM_SOURCE_LANG: 'llm-source-lang',
 	LLM_TARGET_LANG: 'llm-target-lang',
+	TTS_ENABLED: 'tts-enabled',
+	TTS_VOICE: 'tts-voice',
+	UI_WIDTH: 'ui-width',
+	UI_MAX_HEIGHT: 'ui-max-height',
 };

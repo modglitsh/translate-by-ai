@@ -5,6 +5,8 @@ AI-powered translation extension for GNOME Shell. Uses LLM APIs (Google Gemini, 
 ## Features
 
 - 🤖 **AI-Powered Translation** — Uses large language models for natural, context-aware translations
+- 🗣️ **Text-to-Speech (TTS)** — Offline native pronunciation of input and output text via `edge-tts`
+- 🎨 **Appearance Controls** — Customize popup width & text max heights to your liking
 - 🔧 **Flexible Provider** — Works with any OpenAI-compatible API (OpenAI, Groq, Ollama, LM Studio) or Google Gemini
 - 📝 **Customizable Prompts** — Full control over system prompt and user prompt templates
 - 🌍 **Any Language** — Translate to/from any language supported by your chosen AI model
@@ -26,7 +28,18 @@ AI-powered translation extension for GNOME Shell. Uses LLM APIs (Google Gemini, 
 
 ## Configuration
 
-Open Extension Settings → **LLM** tab:
+Open Extension Settings to find three tabs: **General**, **Appearance**, and **LLM**.
+
+### 1. General Tab
+- **Keyboard Shortcut**: Change the default `<Super> + T` (or `<Super><Alt>T`) hotkey.
+- **Text to Speech**: Toggle TTS on or off.
+- **TTS Voice**: Select your preferred language model / accent for TTS output (requires `edge-tts`).
+
+### 2. Appearance Tab
+- **Popup Width**: Expand the width of the translation UI to fit longer sentences more comfortably.
+- **Text Max Height**: Control exactly how tall the input/output scrollable text areas can grow before showing a scrollbar.
+
+### 3. LLM Connection Tab
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -64,6 +77,7 @@ Change the **Base URL** to your provider's endpoint:
 
 - GNOME Shell 46
 - An API key from a supported LLM provider
+- `edge-tts` (Optional) — required for Text-to-Speech playback. Install via `pip install edge-tts`.
 
 ## Author
 

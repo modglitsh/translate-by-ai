@@ -77,6 +77,10 @@ const TranslateIndicator = GObject.registerClass({
 		this._llmSourceLang = '';
 		this._llmTargetLang = '';
 
+		// UI Settings cache
+		this._uiWidth = 550;
+		this._uiMaxHeight = 250;
+
 		let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box translate-indicator-hbox' });
 		this.icon = new St.Icon({
 			style_class: 'system-status-icon'
@@ -103,6 +107,7 @@ const TranslateIndicator = GObject.registerClass({
 			style_class: 'entry-container',
 			hscrollbar_policy: St.PolicyType.NEVER,
 			vscrollbar_policy: St.PolicyType.AUTOMATIC,
+			overlay_scrollbars: true,
 			clip_to_allocation: true,
 		});
 
@@ -113,6 +118,7 @@ const TranslateIndicator = GObject.registerClass({
 			hint_text: _('Type here to translate...'),
 			track_hover: true
 		});
+		this.inputEntry.set_width(this._uiWidth);
 		this.inputEntry.get_clutter_text().set_single_line_mode(false);
 		this.inputEntry.get_clutter_text().set_line_wrap(true);
 		this.inputEntry.get_clutter_text().set_line_wrap_mode(Pango.WrapMode.WORD_CHAR);
@@ -122,17 +128,98 @@ const TranslateIndicator = GObject.registerClass({
 		_boxI.add_child(this.inputEntry);
 		this.scrollInput.add_child(_boxI);
 
+		let speakInputBtn = new St.Button({
+			style_class: 'button translate-speak-button',
+			child: new St.Icon({
+				icon_name: 'audio-input-microphone-symbolic', // Microphone icon 
+				style_class: 'popup-menu-icon'
+			}),
+			x_align: Clutter.ActorAlign.END,
+			opacity: 0, // Hidden by default
+			reactive: false,
+		});
+
+		this.speakInputBtn = speakInputBtn; // Store reference
+
+		speakInputBtn.connect('clicked', () => {
+			let text = this.inputEntry.get_text();
+			if (text && text.trim().length > 0) {
+				this._speakText(text);
+			}
+		});
+
+		let inputFooter = new St.BoxLayout({
+			style_class: 'translate-output-header',
+			x_expand: true,
+			x_align: Clutter.ActorAlign.END,
+		});
+		inputFooter.add_child(speakInputBtn);
+
 		let inputActor = new St.BoxLayout({
 			style_class: 'translate-main-container',
 			reactive: true,
 			vertical: true
 		});
 		inputActor.add_child(this.scrollInput);
+		inputActor.add_child(inputFooter);
 		inputMenuItem.actor.add_child(inputActor);
 		this.menu.addMenuItem(inputMenuItem);
 
+
 		// --- OUTPUT SECTION (PopupMenuSection for scrolling) ---
 		let outputSection = new PopupMenu.PopupMenuSection();
+
+		// Header with Copy Button
+		let outputHeader = new St.BoxLayout({
+			style_class: 'translate-output-header',
+			x_expand: true,
+			x_align: Clutter.ActorAlign.END,
+		});
+
+		let speakBtn = new St.Button({
+			style_class: 'button translate-speak-button',
+			child: new St.Icon({
+				icon_name: 'audio-input-microphone-symbolic',
+				style_class: 'popup-menu-icon'
+			}),
+			x_align: Clutter.ActorAlign.END,
+			opacity: 0, // Hidden by default
+			reactive: false,
+		});
+
+		this.speakBtn = speakBtn; // Store reference
+
+		speakBtn.connect('clicked', () => {
+			let text = this.outputLabel.get_text();
+			if (text && text !== _('⏳ Translating...') && !text.startsWith(_('❌ Error:'))) {
+				this._speakText(text);
+			}
+		});
+
+		let copyBtn = new St.Button({
+			style_class: 'button translate-copy-button',
+			child: new St.Icon({
+				icon_name: 'edit-copy-symbolic',
+				style_class: 'popup-menu-icon'
+			}),
+			x_align: Clutter.ActorAlign.END,
+			opacity: 0, // Hidden by default
+			reactive: false,
+		});
+
+		this.copyBtn = copyBtn; // Store reference
+
+		copyBtn.connect('clicked', () => {
+			let text = this.outputLabel.get_text();
+			if (text && text !== _('⏳ Translating...') && !text.startsWith(_('❌ Error:'))) {
+				this._copyToClipboard(text);
+				this._showNotification(_('Copied to clipboard!'));
+			}
+		});
+
+		outputHeader.add_child(speakBtn);
+		outputHeader.add_child(copyBtn);
+		outputSection.actor.add_child(outputHeader);
 
 		this.scrollOutput = new St.ScrollView({
 			style_class: 'translate-output-scroll',
@@ -147,6 +234,7 @@ const TranslateIndicator = GObject.registerClass({
 			style_class: 'translate-output',
 			reactive: true,
 		});
+		this.outputLabel.set_width(this._uiWidth);
 		this.outputLabel.clutter_text.set_selectable(true);
 		this.outputLabel.clutter_text.set_line_wrap(true);
 		this.outputLabel.clutter_text.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR);
@@ -171,9 +259,43 @@ const TranslateIndicator = GObject.registerClass({
 		that.menu.connect('open-state-changed', (self, open) => {
 			this._timeoutId = setTimeout(() => {
 				if (open) {
+					// Auto-focus input
 					this.inputEntry.get_clutter_text().grab_key_focus();
 					this._updateScrollHeight(this.inputEntry, this.scrollInput, true);
 					this._updateScrollHeight(this.outputLabel, this.scrollOutput, false);
+
+					// Smart Selection Logic: Grab Primary Selection
+					this.extension.clipboard.get_text(St.ClipboardType.PRIMARY, (clipboard, text) => {
+						if (text && text.trim().length > 0) {
+							// Always overwrite if there's a new selection
+							let cleanText = text.trim();
+							// Optional: checking if it's different to avoid re-translating same text
+							// But user might want to re-translate, so we overwrite.
+							this.inputEntry.set_text(cleanText);
+							this._updateScrollHeight(this.inputEntry, this.scrollInput, true);
+
+							// Clear previous output
+							this.outputLabel.set_text('');
+							this._updateScrollHeight(this.outputLabel, this.scrollOutput, false);
+							this.copyBtn.opacity = 0;
+							this.copyBtn.reactive = false;
+							this.speakBtn.opacity = 0;
+							this.speakBtn.reactive = false;
+
+							if (this._isEnglish(cleanText)) {
+								this.speakInputBtn.opacity = 255;
+								this.speakInputBtn.reactive = true;
+							} else {
+								this.speakInputBtn.opacity = 0;
+								this.speakInputBtn.reactive = false;
+							}
+
+							// Auto-submit
+							this._on_key_press_event(this.inputEntry, {
+								get_key_symbol: () => 65293 // Fake Enter key
+							});
+						}
+					});
 				}
 			}, 50);
 		});
@@ -181,6 +303,14 @@ const TranslateIndicator = GObject.registerClass({
 
 	_onInputTextChanged() {
 		this._updateScrollHeight(this.inputEntry, this.scrollInput, true);
+		let text = this.inputEntry.get_text();
+		if (text && this._isEnglish(text)) {
+			this.speakInputBtn.opacity = 255;
+			this.speakInputBtn.reactive = true;
+		} else {
+			this.speakInputBtn.opacity = 0;
+			this.speakInputBtn.reactive = false;
+		}
 	}
 
 	_updateScrollHeight(widget, scrollView, isEntry) {
@@ -188,8 +318,14 @@ const TranslateIndicator = GObject.registerClass({
 		let layout = clutterText.get_layout();
 		if (!layout) return;
 
-		if (layout.get_line_count() > 8) {
-			scrollView.set_height(250);
+		let maxH = this._uiMaxHeight || 250;
+
+		// Use exact pixel height of the text block to determine if scrollbar is needed
+		let extents = layout.get_pixel_extents();
+		let logicalHeight = extents[1].height + (isEntry ? 30 : 20); // Add container padding buffer
+
+		if (logicalHeight > maxH) {
+			scrollView.set_height(maxH);
 		} else {
 			scrollView.set_height(-1);
 		}
@@ -205,18 +341,78 @@ const TranslateIndicator = GObject.registerClass({
 
 			this.outputLabel.set_text(_('⏳ Translating...'));
 			this._updateScrollHeight(this.outputLabel, this.scrollOutput, false);
+			this.copyBtn.opacity = 0;
+			this.copyBtn.reactive = false;
+			this.speakBtn.opacity = 0;
+			this.speakBtn.reactive = false;
 
 			this._translateWithLLM(inputText).then((result) => {
 				this.outputLabel.set_text(result);
 				this._updateScrollHeight(this.outputLabel, this.scrollOutput, false);
+				this.copyBtn.opacity = 255;
+				this.copyBtn.reactive = true;
+				if (this._isEnglish(result)) {
+					this.speakBtn.opacity = 255;
+					this.speakBtn.reactive = true;
+				} else {
+					this.speakBtn.opacity = 0;
+					this.speakBtn.reactive = false;
+				}
+				// Re-focus input after translation
+				this.inputEntry.get_clutter_text().grab_key_focus();
 			}).catch((error) => {
 				this.outputLabel.set_text(_('❌ Error: ') + error.message);
 				this._updateScrollHeight(this.outputLabel, this.scrollOutput, false);
+				this.copyBtn.opacity = 0;
+				this.copyBtn.reactive = false;
+				this.speakBtn.opacity = 0;
+				this.speakBtn.reactive = false;
 			});
 
 			return Clutter.EVENT_STOP;
 		}
 		return Clutter.EVENT_PROPAGATE;
+	}
+
+	_copyToClipboard(text) {
+		this.extension.clipboard.set_text(St.ClipboardType.CLIPBOARD, text);
+	}
+
+	_speakText(text) {
+		if (!this.extension.settings.get_boolean(Fields.TTS_ENABLED)) {
+			return; // Do nothing if TTS is disabled
+		}
+
+		try {
+			// Cancel any currently playing audio
+			GLib.spawn_command_line_async('pkill -f edge-tts');
+			GLib.spawn_command_line_async('pkill -f mpv');
+			// Using edge-playback (part of edge-tts) installed at ~/.local/bin/edge-playback
+			// First, cancel any currently playing audio
+			GLib.spawn_command_line_async('pkill -f edge-playback');
+
+			// Sanitize the text to prevent shell injection, replace ' with '\''
+			let safeText = text.replace(/'/g, "'\\''");
+
+			// Get voice from settings
+			let voice = this.extension.settings.get_string(Fields.TTS_VOICE) || 'en-US-AriaNeural';
+
+			// Try to spawn the edge-playback command
+			GLib.spawn_command_line_async(`/home/mohamed/.local/bin/edge-playback --voice ${voice} --text '${safeText}'`);
+
+		} catch (error) {
+			console.error('Failed to trigger text-to-speech:', error);
+			this._showNotification(_('Failed to play audio. Make sure edge-tts is installed.'));
+		}
+	}
+
+	_isEnglish(text) {
+		const arabicRegex = /[\u0600-\u06FF]/;
+		if (arabicRegex.test(text)) {
+			return false;
+		}
+		const englishRegex = /[a-zA-Z]/;
+		return englishRegex.test(text);
 	}
 
 	// ===== LLM Translation via API =====
@@ -382,6 +578,17 @@ const TranslateIndicator = GObject.registerClass({
 		this._llmUserPrompt = settings.get_string(Fields.LLM_USER_PROMPT);
 		this._llmSourceLang = settings.get_string(Fields.LLM_SOURCE_LANG);
 		this._llmTargetLang = settings.get_string(Fields.LLM_TARGET_LANG);
+
+		// Update UI dynamically if already built
+		this._uiWidth = settings.get_int(Fields.UI_WIDTH) || 550;
+		this._uiMaxHeight = settings.get_int(Fields.UI_MAX_HEIGHT) || 250;
+
+		if (this.inputEntry) {
+			this.inputEntry.set_width(this._uiWidth);
+		}
+		if (this.outputLabel) {
+			this.outputLabel.set_width(this._uiWidth);
+		}
 	}
 
 	_initNotifSource() {

@@ -45,6 +45,31 @@
       <description>Default target language for translation</description>
     </key>
 
+    <key name="tts-enabled" type="b">
+      <default>true</default>
+      <summary>Enable TTS</summary>
+      <description>Enable text-to-speech for English output</description>
+    </key>
+
+    <key name="tts-voice" type="s">
+      <default>'en-US-AriaNeural'</default>
+      <summary>TTS Voice</summary>
+      <description>The voice to use for Edge TTS</description>
+    </key>
+
+    <!-- Appearance -->
+    <key name="ui-width" type="i">
+      <default>550</default>
+      <summary>UI Width</summary>
+      <description>Maximum width of the translate menu</description>
+    </key>
+
+    <key name="ui-max-height" type="i">
+      <default>250</default>
+      <summary>UI Max Height</summary>
+      <description>Maximum height of the text areas</description>
+    </key>
+
     <!-- Shortcuts -->
     <key name="translate-with-notification" type="as">
       <default><![CDATA[['<Super><Alt>T']]]></default>

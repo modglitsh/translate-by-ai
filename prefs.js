@@ -17,10 +17,19 @@ export default class TranslateIndicatorPreferences extends ExtensionPreferences 
 			icon_name: 'preferences-system-symbolic',
 		});
 		generalPage.add(settingsUI.languageGroup);   // New group for languages
+		generalPage.add(settingsUI.ttsGroup);        // New group for TTS
 		generalPage.add(settingsUI.shortcuts);       // Existing shortcuts group
 		window.add(generalPage);
 
-		// --- Page 2: LLM Connection ---
+		// --- Page 2: Appearance ---
+		const appearancePage = new Adw.PreferencesPage({
+			title: _('Appearance'),
+			icon_name: 'view-restore-symbolic',
+		});
+		appearancePage.add(settingsUI.appearanceGroup);
+		window.add(appearancePage);
+
+		// --- Page 3: LLM Connection ---
 		const llmConnectionPage = new Adw.PreferencesPage({
 			title: _('LLM Connection'),
 			icon_name: 'network-server-symbolic',
@@ -80,6 +89,84 @@ class Settings {
 		this.targetLangEntry.text = this.schema.get_string(Fields.LLM_TARGET_LANG);
 		this.languageGroup.add(this.targetLangEntry);
 
+
+		// ===== Text to Speech Group =====
+		this.ttsGroup = new Adw.PreferencesGroup({
+			title: _('Text to Speech Settings'),
+		});
+
+		// Enable TTS Switch
+		this.ttsEnabledRow = new Adw.SwitchRow({
+			title: _('Enable Text to Speech'),
+			subtitle: _('Show speak buttons for English text'),
+		});
+		this.ttsEnabledRow.active = this.schema.get_boolean(Fields.TTS_ENABLED);
+		this.ttsGroup.add(this.ttsEnabledRow);
+
+		// Voice Selection 
+		const voiceModel = Gtk.StringList.new([
+			'en-US-AriaNeural',
+			'en-US-GuyNeural',
+			'en-GB-SoniaNeural',
+			'en-GB-RyanNeural',
+			'en-AU-NatashaNeural',
+			'en-AU-WilliamNeural'
+		]);
+
+		this.ttsVoiceRow = new Adw.ComboRow({
+			title: _('Voice Model'),
+			model: voiceModel,
+		});
+
+		// Find current index
+		const currentVoice = this.schema.get_string(Fields.TTS_VOICE);
+		let selectedIndex = 0;
+		for (let i = 0; i < voiceModel.get_n_items(); i++) {
+			if (voiceModel.get_string(i) === currentVoice) {
+				selectedIndex = i;
+				break;
+			}
+		}
+		this.ttsVoiceRow.selected = selectedIndex;
+
+		this.ttsVoiceRow.connect('notify::selected', () => {
+			const index = this.ttsVoiceRow.selected;
+			const selectedString = voiceModel.get_string(index);
+			this.schema.set_string(Fields.TTS_VOICE, selectedString);
+		});
+
+		this.ttsGroup.add(this.ttsVoiceRow);
+
+		// ===== Appearance Group =====
+		this.appearanceGroup = new Adw.PreferencesGroup({
+			title: _('Size Settings'),
+		});
+
+		// UI Width
+		this.uiWidthRow = new Adw.SpinRow({
+			title: _('Popup Width (px)'),
+			subtitle: _('Width of the input and output boxes'),
+			adjustment: new Gtk.Adjustment({
+				lower: 300,
+				upper: 1500,
+				step_increment: 50,
+			})
+		});
+		this.uiWidthRow.value = this.schema.get_int(Fields.UI_WIDTH);
+		this.appearanceGroup.add(this.uiWidthRow);
+
+		// UI Max Height
+		this.uiMaxHeightRow = new Adw.SpinRow({
+			title: _('Text Max Height (px)'),
+			subtitle: _('Maximum height before scrollbar appears'),
+			adjustment: new Gtk.Adjustment({
+				lower: 100,
+				upper: 1000,
+				step_increment: 25,
+			})
+		});
+		this.uiMaxHeightRow.value = this.schema.get_int(Fields.UI_MAX_HEIGHT);
+		this.appearanceGroup.add(this.uiMaxHeightRow);
 
 		// ===== Prompt Group =====
 		this.promptGroup = new Adw.PreferencesGroup({
@@ -179,6 +266,9 @@ class Settings {
 		this.schema.bind(Fields.LLM_SOURCE_LANG, this.sourceLangEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
 
 		this.schema.bind(Fields.LLM_TARGET_LANG, this.targetLangEntry, 'text', Gio.SettingsBindFlags.DEFAULT);
+		this.schema.bind(Fields.TTS_ENABLED, this.ttsEnabledRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+		this.schema.bind(Fields.UI_WIDTH, this.uiWidthRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+		this.schema.bind(Fields.UI_MAX_HEIGHT, this.uiMaxHeightRow, 'value', Gio.SettingsBindFlags.DEFAULT);
 
 		// For TextViews, we need manual save on buffer change
 		this.systemPromptText.get_buffer().connect('changed', () => {
