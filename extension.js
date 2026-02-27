@@ -402,7 +402,6 @@ const TranslateIndicator = GObject.registerClass({
 
 			// Cancel any currently playing audio
 			GLib.spawn_command_line_async('pkill -f edge-tts');
-			GLib.spawn_command_line_async('pkill -f mpv');
 			GLib.spawn_command_line_async('pkill -f edge-playback');
 
 			// Sanitize the text to prevent shell injection, replace ' with '\''
